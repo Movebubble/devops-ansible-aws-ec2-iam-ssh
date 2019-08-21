@@ -1,0 +1,3 @@
+iam_authorized_groups: SSHusers
+iam_sudoers_groups: SSHAdmins
+sshd_service_name: sshd

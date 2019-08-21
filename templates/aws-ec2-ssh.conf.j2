@@ -1,0 +1,10 @@
+IAM_AUTHORIZED_GROUPS="{{ iam_authorized_groups|default('') }}"
+LOCAL_MARKER_GROUP="iam-synced-users"
+LOCAL_GROUPS="{{ local_groups|default('') }}"
+SUDOERS_GROUPS="{{ iam_sudoers_groups|default('') }}"
+ASSUMEROLE="{{ assumerole|default('') }}"
+
+# Remove or set to 0 if you are done with configuration
+# To change the interval of the sync change the file
+# /etc/cron.d/aws-ec2-ssh
+DONOTSYNC=0

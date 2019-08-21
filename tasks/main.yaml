@@ -1,0 +1,66 @@
+- include_vars: "{{ ansible_os_family|lower }}.yaml"
+
+# install aws-ec2-ssh binaries
+- name: Install scripts
+  copy:
+    dest: "/usr/local/bin/{{ item }}"
+    mode: 0755
+    src: "{{ item }}"
+    owner: root
+    group: root
+  with_items:
+    - import-users.sh
+    - authorized-keys-command.sh
+
+# configure sshd
+- lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: '^AuthorizedKeysCommand '
+    insertafter: '^#AuthorizedKeysCommand '
+    line: 'AuthorizedKeysCommand /usr/local/bin/authorized-keys-command.sh'
+  notify: restart sshd
+
+- lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: '^PermitRootLogin '
+    insertafter: '^#PermitRootLogin '
+    line: 'PermitRootLogin no'
+  notify: restart sshd
+
+- lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: '^AuthorizedKeysCommandUser '
+    insertafter: '^#AuthorizedKeysCommandUser '
+    line: 'AuthorizedKeysCommandUser nobody'
+  notify: restart sshd
+
+- name: install aws-ec2-ssh config file
+  template:
+    src: aws-ec2-ssh.conf.j2
+    dest: /etc/aws-ec2-ssh.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Setup IAM users
+  command: /usr/local/bin/import-users.sh
+
+- name: setup crontab task to add new users every few minutes
+  cron:
+    name: "ssh install users"
+    cron_file: aws-import-users
+    minute: "*/10"
+    job: "/usr/local/bin/import-users.sh > /dev/null 2>&1"
+    user: root
+    state: present
+
+- name: set PATH for crontask
+  cron:
+    name: PATH
+    env: yes
+    value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+    cron_file: aws-import-users
+    user: root
